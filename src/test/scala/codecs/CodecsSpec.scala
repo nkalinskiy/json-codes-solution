@@ -94,17 +94,20 @@ class CodecsSpec extends AnyFlatSpec with Matchers {
 
   "student" should "be pretty printed using Show instance" in {
     val studentJson = Student("Max", 21, University("Inno", "Inno", "Russia", 214)).toJson
-    studentJson.show shouldEqual
-      """{
-         |  "name": "Max",
-         |  "age": 21,
-         |  "university": {
-         |    "name": "Inno",
-         |    "city": "Inno",
-         |    "qsRank": 214
-         |  }
-         |}
-        |""".stripMargin
+
+    val expected = """{
+                     |  "name": "Max",
+                     |  "age": 21,
+                     |  "university": {
+                     |    "name": "Inno",
+                     |    "city": "Inno",
+                     |    "country": "Russia",
+                     |    "qsRank": 214
+                     |  }
+                     |}""".stripMargin
+
+    studentJson.show shouldEqual expected
+
   }
 
   "manager" should "be parsed as json object" in {
