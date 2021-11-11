@@ -11,8 +11,6 @@ trait Person {
 }
 object Person {
 
-//  import TcImplicits._
-
   private val personAttributesMap: Person => Map[String, Json] = person =>
     Map(
       "name" -> person.name.toJson,
@@ -51,7 +49,7 @@ object Person {
       map.readField[String]("city"),
       map.readField[String]("country"),
       map.readField[Int]("qsRank")
-      ).mapN(University)
+    ).mapN(University)
   )
 
   implicit val studentJsonWriter: JsonWriter[Student] = student => {
@@ -72,8 +70,6 @@ object Person {
     JsonObject(workerAttributesMap(manager) ++ Map("employees" -> manager.employees.toJson[List[Worker]]))
   }
 
-
-
   implicit val employeeJsonReader: JsonReader[Employee] = objectReader(map =>
     (
       map.readField[String]("name"),
@@ -91,15 +87,3 @@ object Person {
     ).mapN(Manager)
   )
 }
-//
-//trait PersonFallbackImplicits {
-//  implicit def personWriter[X <: Person]: JsonWriter[X] = personJsonWriter
-//}
-//
-//trait WorkerFallbackImplicits extends PersonFallbackImplicits {
-//  implicit def workerWriter[X <: Worker]: JsonWriter[X] = workerJsonWriter
-//}
-//
-//object TcImplicits extends WorkerFallbackImplicits {
-//  implicit def studentWriter[X <: Student]: JsonWriter[X] = studentJsonWriter
-//}

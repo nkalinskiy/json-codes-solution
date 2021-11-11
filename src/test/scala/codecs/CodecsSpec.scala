@@ -11,7 +11,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class CodecsSpec extends AnyFlatSpec with Matchers {
-//  import  TcImplicits._
 
   "string" should "be parsed as json value" in {
     "String".toJson shouldEqual JsonString("String")
@@ -189,7 +188,7 @@ class CodecsSpec extends AnyFlatSpec with Matchers {
         (
           map.readField[Int]("value"),
           map.readField[Manager]("manager")
-          ).mapN(TestEntity)
+        ).mapN(TestEntity)
       )
 
     val result = JsonObject(
