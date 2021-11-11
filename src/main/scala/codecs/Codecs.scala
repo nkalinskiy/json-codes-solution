@@ -1,5 +1,7 @@
 package codecs
 
+import codecs.Json._
+
 sealed abstract class ReaderError(message: String, field: String)
 case class WrongType(field: String, message: String = "Wrong field type") extends ReaderError(message, field)
 case class AbsentField(field: String, message: String = "Absent field") extends ReaderError(message, field)
@@ -9,11 +11,27 @@ trait JsonWriter[A] {
 }
 
 object JsonWriter {
+
+  implicit val intWriter: JsonWriter[Int] = JsonInt(_)
+  implicit val doubleWriter: JsonWriter[Double] = JsonDouble(_)
+  implicit val stringWriter: JsonWriter[String] = JsonString(_)
+
+  implicit def optionWriter[A, B](implicit evidence: A <:< B, innerWriter: JsonWriter[B]): JsonWriter[Option[A]] = {
+    case Some(value) => innerWriter.write(value)
+    case None => JsonNull
+  }
+
+  implicit def listWriter[A, B](implicit evidence: A <:< B, innerWriter: JsonWriter[B]): JsonWriter[List[A]] = values => {
+    val arrayValues = values.map((value) => innerWriter.write(value))
+
+    JsonArray(arrayValues)
+  }
+
   // Summoner function
-  def apply[A]: JsonWriter[A] = ???
+  def apply[A](implicit writer: JsonWriter[A]): JsonWriter[A] = writer
 
   implicit class JsonWriterOps[A](val a: A) {
-    def toJson: Json = ???
+    def toJson[B](implicit evidence: A <:< B, writer: JsonWriter[B]): Json = writer.write(a)
   }
 }
 

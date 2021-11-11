@@ -9,6 +9,8 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class CodecsSpec extends AnyFlatSpec with Matchers {
+//  import  TcImplicits._
+
   "string" should "be parsed as json value" in {
     "String".toJson shouldEqual JsonString("String")
   }
@@ -34,7 +36,7 @@ class CodecsSpec extends AnyFlatSpec with Matchers {
   }
 
   "list of strings" should "be parsed as json value" in {
-    List("Kek", "Shrek") shouldEqual JsonArray(List(JsonString("Kek"), JsonString("Shrek")))
+    List("Kek", "Shrek").toJson shouldEqual JsonArray(List(JsonString("Kek"), JsonString("Shrek")))
   }
 
   "list of strings" should "be read from JsonArray" in {
@@ -85,7 +87,7 @@ class CodecsSpec extends AnyFlatSpec with Matchers {
 
   "student" should "be parsed as person if there is no codec for student in scope" in {
     case class StudentTest(name: String, age: Int, university: University) extends Person
-    StudentTest("Max", 21, University("Inno", "Inno", "Russia", 214)).toJson shouldEqual JsonObject(
+    StudentTest("Max", 21, University("Inno", "Inno", "Russia", 214)).toJson[Person] shouldEqual JsonObject(
       Map("name" -> JsonString("Max"), "age" -> JsonInt(21))
     )
   }
