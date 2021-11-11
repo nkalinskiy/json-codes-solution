@@ -1,8 +1,9 @@
 package codecs
 
+import cats.implicits.{catsSyntaxTuple3Semigroupal, catsSyntaxTuple4Semigroupal}
 import codecs.Json.JsonObject
+import codecs.JsonReader.{ObjectReaderSyntax, objectReader}
 import codecs.JsonWriter.JsonWriterOps
-import codecs.Person.{Student, Worker, personJsonWriter, studentJsonWriter, workerJsonWriter}
 
 trait Person {
   def name: String
@@ -44,6 +45,15 @@ object Person {
     )
   }
 
+  implicit val universityJsonReader: JsonReader[University] = objectReader(map =>
+    (
+      map.readField[String]("name"),
+      map.readField[String]("city"),
+      map.readField[String]("country"),
+      map.readField[Int]("qsRank")
+      ).mapN(University)
+  )
+
   implicit val studentJsonWriter: JsonWriter[Student] = student => {
     JsonObject(
       personAttributesMap(student) ++ Map("university" -> student.university.toJson)
@@ -61,6 +71,25 @@ object Person {
   implicit val managerJsonWriter: JsonWriter[Manager] = manager => {
     JsonObject(workerAttributesMap(manager) ++ Map("employees" -> manager.employees.toJson[List[Worker]]))
   }
+
+
+
+  implicit val employeeJsonReader: JsonReader[Employee] = objectReader(map =>
+    (
+      map.readField[String]("name"),
+      map.readField[Int]("age"),
+      map.readField[Double]("salary")
+    ).mapN(Employee)
+  )
+
+  implicit val managerJsonReader: JsonReader[Manager] = objectReader(map =>
+    (
+      map.readField[String]("name"),
+      map.readField[Int]("age"),
+      map.readField[Double]("salary"),
+      map.readField[List[Employee]]("employees")
+    ).mapN(Manager)
+  )
 }
 //
 //trait PersonFallbackImplicits {
@@ -74,5 +103,3 @@ object Person {
 //object TcImplicits extends WorkerFallbackImplicits {
 //  implicit def studentWriter[X <: Student]: JsonWriter[X] = studentJsonWriter
 //}
-
-

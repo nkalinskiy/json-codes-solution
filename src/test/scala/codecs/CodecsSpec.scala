@@ -1,5 +1,7 @@
 package codecs
 
+import cats.data.Validated
+import cats.data.Validated.Valid
 import cats.implicits._
 import codecs.Json._
 import codecs.JsonReader._
@@ -16,7 +18,7 @@ class CodecsSpec extends AnyFlatSpec with Matchers {
   }
 
   "string" should "be read from JsonString" in {
-    JsonString("String").as[String] shouldEqual Right("String")
+    JsonString("String").as[String] shouldEqual "String".validNel
   }
 
   "integer" should "be parsed as json value" in {
@@ -24,7 +26,7 @@ class CodecsSpec extends AnyFlatSpec with Matchers {
   }
 
   "integer" should "be read from JsonInt" in {
-    JsonInt(1234).as[Int] shouldEqual Right(1234)
+    JsonInt(1234).as[Int] shouldEqual 1234.validNel
   }
 
   "double" should "be parsed as json value" in {
@@ -32,7 +34,7 @@ class CodecsSpec extends AnyFlatSpec with Matchers {
   }
 
   "double" should "be read from JsonDouble" in {
-    JsonDouble(2.5).as[Double] shouldEqual Right(2.5)
+    JsonDouble(2.5).as[Double] shouldEqual 2.5.validNel
   }
 
   "list of strings" should "be parsed as json value" in {
@@ -41,7 +43,7 @@ class CodecsSpec extends AnyFlatSpec with Matchers {
 
   "list of strings" should "be read from JsonArray" in {
     JsonArray(List(JsonString("Kek"), JsonString("Shrek"))).as[List[String]] shouldEqual
-      List("Kek", "Shrek")
+      List("Kek", "Shrek").validNel
   }
 
   "list of universities" should "be read from JsonArray" in {
@@ -62,9 +64,11 @@ class CodecsSpec extends AnyFlatSpec with Matchers {
       )
     )
     JsonArray(List(innoJson, mitJson)).as[List[University]] shouldEqual
-      List(
-        University("Inno", "Inno", "Russia", 214),
-        University("MIT", "Massachusetts", "USA", 1)
+      Valid(
+        List(
+          University("Inno", "Inno", "Russia", 214),
+          University("MIT", "Massachusetts", "USA", 1)
+        )
       )
   }
 
@@ -150,14 +154,14 @@ class CodecsSpec extends AnyFlatSpec with Matchers {
           )
         )
       )
-    ).as[Manager] shouldEqual Right(Manager("Max", 30, 60000, List(Employee("Andy", 23, 40000))))
+    ).as[Manager] shouldEqual Validated.Valid(Manager("Max", 30, 60000, List(Employee("Andy", 23, 40000))))
   }
 
   "manager json" should "return list of errors if json is invalid" in {
     val errors = List(
       WrongType("age"),
       AbsentField("salary"),
-      AbsentField("employees, 0: age")
+      AbsentField("employees.0.age")
     ) // You can implement your own error adt, just change test to show it in action
     JsonObject(
       Map(
@@ -174,8 +178,43 @@ class CodecsSpec extends AnyFlatSpec with Matchers {
           )
         )
       )
-    ).as[Manager] shouldEqual Left(errors)
+    ).as[Manager] shouldEqual errors.map(_.invalidNel).sequence
   }
 
+  "nested pbject" should "parse" in {
+    case class TestEntity(value: Int, manager: Manager)
+
+    implicit val testEntityJsonReader: JsonReader[TestEntity] =
+      objectReader(map =>
+        (
+          map.readField[Int]("value"),
+          map.readField[Manager]("manager")
+          ).mapN(TestEntity)
+      )
+
+    val result = JsonObject(
+      Map(
+        "value" -> JsonInt(123),
+        "manager" -> JsonObject(
+          Map(
+            "name" -> JsonString("Max"),
+            "age" -> JsonInt(30),
+            "salary" -> JsonDouble(60000),
+            "employees" -> JsonArray(
+              List(
+                JsonObject(
+                  Map(
+                    "name" -> JsonString("Andy"),
+                    //                    "age" -> JsonInt(23),
+                    "salary" -> JsonDouble(40000)
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    ).as[TestEntity] shouldEqual AbsentField("manager.employees.0.age").invalidNel
+  }
 
 }
