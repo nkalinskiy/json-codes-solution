@@ -1,35 +1,46 @@
 # Json Codecs
-Your task is to implement a json parser module using a typeclass pattern.
-The program should be able to parse to/from Json:
-* strings
-* integers
-* floating point numbers with double precision
-* lists
-* user types
+Ваша задача реализовать json парсер, используя тайпклассы.
+Программа должна уметь парсить из/в Json:
+* строки
+* целые числа
+* числа с плавающей запятой
+* листы
+* кастомные пользовательские типы
 ### Json
-Json can be represented by string, int, double, array or 
-a composite json object
-### JsonWriter
-This typeclass can accept a value of any type and transform 
-into Json object. Also it has a typeclass instance summoner 
-and a syntax extension to ease transformations. 
-If there is no writer in scope for a type an instance of a parent type should be used.
+`Json` может быть отображен нулом, строкой, числами, массивом или json объектом с множеством ранее перечисленных типов
+```scala=
+sealed trait Json
+object Json {
+  final case object JsonNull extends Json
+  final case class JsonString(value: String) extends Json
+  final case class JsonInt(value: Int) extends Json
+  final case class JsonDouble(value: Double) extends Json
+  final case class JsonArray(value: List[Json]) extends Json
+  final case class JsonObject(value: Map[String, Json]) extends Json
+}
+```
+### JsonWriter[A]
+Этот тайпкласс может принимать значение типа `А` и трансформировать его в `Json` объект. 
+Также у него есть summoner и синтаксическое расширение для вызова `toJson` прямо на объекте типа `А`
 ### JsonReader
-This typeclass can accept a json and return an object constructed from it as Right part.
-If it encounters errors, it accumulates them and return all in the end as Left part.
+Этот тайпкласс может принимать `Json` и возвращать объект типа `Right(А)`, сконструированный из `Json`.
+Если при парсинге возникают ошибки, то они должны аккумулироваться и возвращаться как `Left`
 
-There are two types of errors: 
-* `WrongType` - reader found field with the corresponding name, but it was of other type than expected by object's constructor
-* `AbsentField` - reader could not find field with the corresponding name in json. 
-If it encounters this error in a list of elements, it should record field as "list `key`, element `id`: element `field`". 
-An example is provided in tests. If Json is only a JsonArray, then only element's `id` and `field` should be stated in error.
-It there is any nesting of objects, parent object key name should be prepended to every error `field`
-* You can define your own error adt or error fields if you think that proposed ones are not enough to accumulate all nested errors appropriately. 
-But do not forget to show custom errors in tests.
+Как вариант, в задание предложено подобное адт ошибок:
+* `WrongType` - `JsonReader` нашел поле с нужным именем, но оно оказалось неподходящего типа для конструирования типа `А`.
+* `AbsentField` - `JsonReader` не нашел нужного поля в исходном `Json`
+* Вы можете дополнять/модифицировать адт ошибок, если считаете предложенное недостаточным. Главное не забудьте отразить новые ошибки в тестах.
 
-You can use any syntax for `Either`/`Validated` or any other types that you will find useful in `cats` library.
-Just import `cats.data.Validated`/`cats.syntax.either._`/`cats.syntax.validated._` and see where it gets you.
-### Useful resources
+### Задание на доп баллы (необязатольное)
+1. Если для нужного типа B нет `JsonWriter[B]`, но при этом есть для типа `A :> B`, то должен использоваться `JsonWriter[A]`, который сериализует только те поля, который определены в объекте `A` 
+2. Объединить `JsonWriter` и `JsonReader` под одним трейтом `Codec`, который будет уметь сериализовать/десериализовать `Json`, и обладать всеми свойствами из пункта доп задания 1.
+3. Подробный трекинг полей с ошибками: 
+- Если ридер встречает ошибку в листе сложных элементов, то в ошибке должен содержаться порядковый номер этого элемента и название поля c ошибкой
+- Если объект является вложенным в другой объект, то название родительского поля, в котором содержится объект с ошибкой, должно быть добавлено в описание ошибки
+
+Можете использовать любой синтаксис для `Either`/`Validated` или других типов, который найдете подходящим в библиотеке `cats`
+Просто импортируйте `cats.data.Validated`/`cats.syntax.either._`/`cats.syntax.validated._` и поисследйте исходный код.
+### Полезные ресурсы
 * http://typelevel.org/cats/typeclasses.html
 * http://typelevel.org/cats/datatypes/validated.html
 * http://eed3si9n.com/herding-cats/
